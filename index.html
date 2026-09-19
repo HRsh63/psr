@@ -1,0 +1,279 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>FAKE FACE, REAL RIOT — Deepfake Detection</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --red:    #ff4d4d;
+      --orange: #ffb74d;
+      --bg:     #0d0d0d;
+      --card:   #141414;
+      --border: #222;
+      --muted:  #888;
+    }
+
+    body {
+      background: var(--bg);
+      color: #e8e8e8;
+      font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* ── NOISE OVERLAY ── */
+    body::before {
+      content: '';
+      position: fixed; inset: 0;
+      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.04'/%3E%3C/svg%3E");
+      pointer-events: none; z-index: 0;
+    }
+
+    /* ── HEADER ── */
+    header {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 1.1rem 2.5rem;
+      border-bottom: 1px solid var(--border);
+      position: sticky; top: 0;
+      background: rgba(13,13,13,0.85);
+      backdrop-filter: blur(12px);
+      z-index: 10;
+    }
+    .logo {
+      font-size: 1rem; font-weight: 800; letter-spacing: 2px;
+      background: linear-gradient(90deg, var(--red), var(--orange));
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+      text-decoration: none;
+    }
+    .badge {
+      font-size: 0.7rem; font-weight: 700; letter-spacing: 1.5px;
+      padding: 0.25rem 0.7rem;
+      border: 1px solid #333; border-radius: 20px;
+      color: var(--muted); text-transform: uppercase;
+    }
+
+    /* ── HERO ── */
+    .hero {
+      flex: 1;
+      display: flex; flex-direction: column;
+      align-items: center; justify-content: center;
+      text-align: center;
+      padding: 5rem 1.5rem 4rem;
+      position: relative; z-index: 1;
+    }
+
+    /* glowing orb behind title */
+    .hero::before {
+      content: '';
+      position: absolute;
+      top: 30%; left: 50%; transform: translate(-50%, -50%);
+      width: 600px; height: 400px;
+      background: radial-gradient(ellipse, rgba(255,77,77,0.12) 0%, transparent 70%);
+      pointer-events: none;
+    }
+
+    .tag {
+      display: inline-flex; align-items: center; gap: 0.5rem;
+      font-size: 0.72rem; font-weight: 700; letter-spacing: 1.8px;
+      text-transform: uppercase; color: var(--red);
+      border: 1px solid rgba(255,77,77,0.35);
+      padding: 0.3rem 0.9rem; border-radius: 20px;
+      margin-bottom: 1.6rem;
+    }
+    .tag span { width: 6px; height: 6px; border-radius: 50%; background: var(--red);
+                animation: pulse 1.8s ease-in-out infinite; display: inline-block; }
+
+    @keyframes pulse {
+      0%,100% { opacity: 1; transform: scale(1); }
+      50%      { opacity: 0.4; transform: scale(0.7); }
+    }
+
+    h1 {
+      font-size: clamp(2.8rem, 7vw, 5.2rem);
+      font-weight: 900; letter-spacing: 3px; line-height: 1.05;
+      background: linear-gradient(135deg, #fff 30%, #bbb 100%);
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+      margin-bottom: 0.3rem;
+    }
+    h1 em {
+      font-style: normal;
+      background: linear-gradient(90deg, var(--red), var(--orange));
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+    }
+
+    .sub {
+      font-size: 1.05rem; color: var(--muted); max-width: 560px;
+      line-height: 1.7; margin: 1.2rem auto 2.6rem;
+    }
+
+    /* ── CTA BUTTONS ── */
+    .cta {
+      display: flex; gap: 1rem; flex-wrap: wrap; justify-content: center;
+      margin-bottom: 3.5rem;
+    }
+
+    .btn {
+      display: inline-flex; align-items: center; gap: 0.55rem;
+      padding: 0.85rem 2rem; border-radius: 8px;
+      font-size: 0.95rem; font-weight: 700; letter-spacing: 0.5px;
+      text-decoration: none; transition: all 0.2s ease;
+      border: none; cursor: pointer;
+    }
+    .btn-primary {
+      background: linear-gradient(135deg, var(--red), #c0392b);
+      color: #fff;
+      box-shadow: 0 4px 24px rgba(255,77,77,0.35);
+    }
+    .btn-primary:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 32px rgba(255,77,77,0.5);
+    }
+    .btn-secondary {
+      background: transparent;
+      color: #ddd;
+      border: 1px solid #333;
+    }
+    .btn-secondary:hover {
+      background: #1a1a1a;
+      border-color: #555;
+      transform: translateY(-2px);
+    }
+
+    .btn svg { flex-shrink: 0; }
+
+    /* ── FEATURES ── */
+    .features {
+      display: flex; gap: 0.8rem; flex-wrap: wrap; justify-content: center;
+      margin-bottom: 1rem;
+    }
+    .chip {
+      display: flex; align-items: center; gap: 0.4rem;
+      font-size: 0.8rem; color: #aaa;
+      background: var(--card); border: 1px solid var(--border);
+      padding: 0.4rem 0.85rem; border-radius: 20px;
+    }
+
+    /* ── CARDS ── */
+    .cards-section {
+      max-width: 1000px; margin: 0 auto 5rem;
+      padding: 0 1.5rem; position: relative; z-index: 1;
+    }
+    .cards-section h2 {
+      text-align: center; font-size: 1.5rem; font-weight: 700;
+      margin-bottom: 2rem; color: #ccc;
+    }
+    .cards {
+      display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 1rem;
+    }
+    .card {
+      background: var(--card); border: 1px solid var(--border);
+      border-radius: 12px; padding: 1.5rem;
+      transition: border-color 0.2s, transform 0.2s;
+    }
+    .card:hover { border-color: #444; transform: translateY(-3px); }
+    .card-icon { font-size: 1.8rem; margin-bottom: 0.8rem; }
+    .card h3 { font-size: 1rem; font-weight: 700; margin-bottom: 0.4rem; color: #ddd; }
+    .card p  { font-size: 0.85rem; color: var(--muted); line-height: 1.6; }
+
+    /* ── FOOTER ── */
+    footer {
+      border-top: 1px solid var(--border);
+      text-align: center; padding: 1.4rem;
+      font-size: 0.78rem; color: #555;
+      position: relative; z-index: 1;
+    }
+    footer a { color: #666; text-decoration: none; }
+    footer a:hover { color: #aaa; }
+  </style>
+</head>
+<body>
+
+  <!-- HEADER -->
+  <header>
+    <a class="logo" href="#">FFRR</a>
+    <span class="badge">100% Local · Open Source</span>
+  </header>
+
+  <!-- HERO -->
+  <section class="hero">
+    <div class="tag"><span></span>Deepfake &amp; Manipulation Detection</div>
+
+    <h1>FAKE FACE,<br><em>REAL RIOT</em></h1>
+
+    <p class="sub">
+      A forensic analysis dashboard for short talking-head videos.
+      Detect AI-generated faces, lip-sync inconsistencies, audio splicing,
+      and recompression artifacts — all running locally on your machine.
+    </p>
+
+    <div class="cta">
+      <!-- LIVE VERSION -->
+      <a class="btn btn-primary"
+         href="https://dabmwdxst4euh5zxltbok9.streamlit.app/"
+         target="_blank" rel="noopener noreferrer">
+        <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"
+             viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polygon points="10 8 16 12 10 16 10 8" fill="currentColor" stroke="none"/></svg>
+        Try Live Version
+      </a>
+
+      <!-- DOWNLOAD -->
+      <a class="btn btn-secondary" href="fake-face-real-riot.zip" download>
+        <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"
+             viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+        Download Source
+      </a>
+    </div>
+
+    <div class="features">
+      <span class="chip">🎥 Lip-sync Analysis</span>
+      <span class="chip">🔊 Audio Forensics</span>
+      <span class="chip">🗜️ Recompression Detection</span>
+      <span class="chip">🐍 Python · Streamlit</span>
+    </div>
+  </section>
+
+  <!-- FEATURE CARDS -->
+  <section class="cards-section">
+    <h2>What It Detects</h2>
+    <div class="cards">
+
+      <div class="card">
+        <div class="card-icon">🎭</div>
+        <h3>Lip-Sync Consistency</h3>
+        <p>Analyzes frame-level mouth movement vs. audio waveform alignment to flag AI-dubbed or face-swapped content.</p>
+      </div>
+
+      <div class="card">
+        <div class="card-icon">🔊</div>
+        <h3>Audio Splicing Detection</h3>
+        <p>Scans for spectral discontinuities, sudden silence transitions, and energy jumps that reveal cut-and-paste audio edits.</p>
+      </div>
+
+      <div class="card">
+        <div class="card-icon">🗜️</div>
+        <h3>Recompression Artifacts</h3>
+        <p>Identifies double-compression signatures and block-level JPEG/H.264 artifacts that appear when videos are re-exported after editing.</p>
+      </div>
+
+      <div class="card">
+        <div class="card-icon">📊</div>
+        <h3>Forensic Risk Score</h3>
+        <p>Aggregates all signals into a single manipulation confidence score with a LOW / SUSPICIOUS / HIGH verdict badge.</p>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- FOOTER -->
+  <footer>
+    <p>FAKE FACE, REAL RIOT &nbsp;·&nbsp; Results are <strong>indicators</strong>, not absolute verdicts.
+    &nbsp;·&nbsp; <a href="https://dabmwdxst4euh5zxltbok9.streamlit.app/" target="_blank">Open App ↗</a></p>
+  </footer>
+
+</body>
+</html>
