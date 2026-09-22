@@ -1,4 +1,4 @@
-"""Video / audio utilities for FAKE FACE, REAL RIOT."""
+ """Video / audio utilities for FAKE FACE, REAL RIOT."""
 
 import os
 import re
