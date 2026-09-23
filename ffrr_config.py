@@ -1,4 +1,4 @@
- """FAKE FACE, REAL RIOT - configuration constants."""
+"""FAKE FACE, REAL RIOT - configuration constants."""
 
 from pathlib import Path
 
