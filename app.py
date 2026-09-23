@@ -1,4 +1,5 @@
 """FAKE FACE, REAL RIOT - Streamlit forensic dashboard."""
+
 import os
 import time
 import hashlib
